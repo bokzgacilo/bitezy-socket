@@ -44,7 +44,7 @@ async function start() {
   await connectDB();
 
   server.listen(PORT, () => {
-    console.log(`WebSocket server listening on port ${PORT}`);
+    console.log(`WebSocket server running on ws://localhost:${PORT}`);
   });
 }
 
