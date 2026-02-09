@@ -44,16 +44,17 @@ interface AppWebSocket extends WebSocket {
 
 const server = http.createServer((req, res) => {
   res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end(`WebSocket server running on ws://localhost:${PORT}`);
+  res.end(`WebSocket server running on ws://127.0.0.1:${PORT}`);
 });
 
 server.on("upgrade", (req, socket: Socket, head) => {
   try {
     if (!req.url) return reject(socket);
-    const origin =
-      process.env.NODE_ENV === "development"
-        ? "http://localhost:4000"
-        : `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
+    const isDev = process.env.NODE_ENV === "development";
+
+    const origin = isDev
+      ? `http://127.0.0.1:${PORT}`
+      : "https://bitezy.online";
 
     const url = new URL(req.url, origin);
     const path = url.pathname;
@@ -113,7 +114,7 @@ async function start() {
   await connectDB();
 
   server.listen(PORT, () => {
-    console.log(`WebSocket server running on ws://localhost:${PORT}`);
+    console.log(`WebSocket server running on ws://127.0.0.1:${PORT}`);
   });
 }
 
