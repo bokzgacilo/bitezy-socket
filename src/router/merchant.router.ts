@@ -18,19 +18,28 @@ merchantWSS.on("connection", async (ws: MerchantSocket, req) => {
 
     const url = new URL(req.url, "ws://127.0.0.1");
     const idParam = url.searchParams.get("id");
-    const merchantId = Number(idParam);
 
-    if (!idParam || Number.isNaN(merchantId))
-      return ws.close(1008, "Invalid merchant id");
+    const merchantId = Number(idParam);
+    if (!idParam || Number.isNaN(merchantId)) return ws.close(1008, "Invalid merchant id");
 
     const merchantExists = await Merchant.findByPk(merchantId);
-    if (!merchantExists)
-      return ws.close(1008, "Merchant not found");
+    if (!merchantExists) return ws.close(1008, "Merchant not found");
 
     ws.merchantId = merchantId;
     ws.socketId = uuidv4();
 
     console.log("merchant connected:", merchantId, ws.socketId);
+
+    const connectedClient = {
+      status: "connected",
+      role: "merchant",
+      merchantId,
+      socketId: ws.socketId,
+      serverTime: Date.now(),
+      heartbeatInterval: 30000
+    };
+
+    ws.send(JSON.stringify(connectedClient));
 
     // replace old connection safely
     const existing = merchantConnections.get(merchantId);

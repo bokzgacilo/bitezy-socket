@@ -1,5 +1,8 @@
 import { WebSocketServer, WebSocket } from "ws";
 import { v4 as uuidv4 } from "uuid";
+import { createOrder } from "../services/order.services";
+import { OrderCreatedPayload, OrderData } from "../types/Order";
+import { sendToMerchant } from "../helpers/merchant.helper";
 
 interface BackendSocket extends WebSocket {
   id: string;
@@ -30,17 +33,52 @@ backendWSS.on("connection", (ws: BackendSocket, req) => {
 
   socketRegistry.set(ws.id, ws);
 
-  ws.on("message", (data) => {
-    console.log("📩 Backend message:", data.toString());
+  ws.on("message", async (data) => {
+    const message: OrderCreatedPayload = JSON.parse(data.toString());
+
+    switch (message.type) {
+      case "order.created":
+        const order = await createOrder(message);
+
+        if (order.status === 'success') {
+          ws.send(JSON.stringify({
+            type: 'order.created',
+            data: order
+          }));
+
+          const orderData = order.data as OrderData;
+          // notify merchant
+          sendToMerchant(orderData.merchantId, {
+            type: 'order.created.success',
+            data: order.data
+          });
+
+          const backendSocket = socketRegistry.get(backendSocketId);
+          console.log(backendSocketId);
+          if (backendSocket) {
+            backendSocket.send(JSON.stringify({
+              type: 'order.created.success',
+              data: order.data
+            }));
+          }
+
+        } else {
+          ws.send(JSON.stringify({
+            type: 'order.error',
+            data: order
+          }));
+        }
+        break;
+      default:
+        console.warn("Unknown message type:", message.type);
+    }
   });
 
   ws.on("close", () => {
-    console.log("❌ Backend disconnected");
+    socketRegistry.delete(ws.id);
   });
 
   ws.on("error", (err) => {
     console.error("Backend socket error:", err.message);
   });
-
-  ws.send(JSON.stringify({ type: "connected", role: "backend" }));
 });
