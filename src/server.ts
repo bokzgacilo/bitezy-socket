@@ -8,6 +8,9 @@ import merchantWSS from "./router/merchant.router";
 import { backendWSS } from "./router/backend.router";
 import { connectDB } from "./utils/database";
 import "./models";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const PORT = Number(process.env.PORT) || 4000;
 const SOCKET_KEY = process.env.SOCKET_KEY!;
