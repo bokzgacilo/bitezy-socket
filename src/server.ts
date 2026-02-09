@@ -50,7 +50,12 @@ const server = http.createServer((req, res) => {
 server.on("upgrade", (req, socket: Socket, head) => {
   try {
     if (!req.url) return reject(socket);
-    const url = new URL(req.url, `http://${req.headers.host}`);
+    const origin =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:4000"
+        : `${req.headers["x-forwarded-proto"] || "https"}://${req.headers.host}`;
+
+    const url = new URL(req.url, origin);
     const path = url.pathname;
     const key = url.searchParams.get("key");
     if (key !== SOCKET_KEY) return reject(socket);
